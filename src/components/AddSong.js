@@ -1,10 +1,113 @@
-import React from 'react'
+import {
+	Button,
+	Dialog,
+	DialogActions,
+	DialogContent,
+	DialogTitle,
+	InputAdornment,
+	makeStyles,
+	TextField
+} from '@material-ui/core'
+import { AddBoxOutlined, Link } from '@material-ui/icons'
+import React, { useState } from 'react'
+
+
+const useStyles = makeStyles(theme => ({
+	container: {
+		display: 'flex',
+		alignItems: 'center'
+	},
+	urlInput: {
+		margin: theme.spacing(1)
+	},
+	addSongButton: {
+		margin: theme.spacing(1)
+	},
+	dialog: {
+		textAlign: 'center'
+	},
+	thumbnail: {
+		width: '90%'
+	}
+}))
 
 
 function AddSong() {
+	const classes = useStyles()
+	const [dialog, setDialog] = useState(false)
+
+	function handleCloseDialog() {
+		setDialog(false)
+	}
+
 	return (
-		<div>
-			AddSong
+		<div className={classes.container}>
+			<Dialog
+				className={classes.dialog}
+				open={dialog}
+				onClose={handleCloseDialog}
+			>
+				<DialogTitle>Edit Song</DialogTitle>
+				<DialogContent>
+					<img
+						className={classes.thumbnail}
+						src="https://ems-media-prod.s3.amazonaws.com/styles/clio_aotw_ems_image_details_retina/s3/entry_attachments/image/50/1398/35822/70126/OQeOfxOTGwDHa1wxiw1bB1zXRhzCbcrGO1Lm9K5Znvo.jpg/OQeOfxOTGwDHa1wxiw1bB1zXRhzCbcrGO1Lm9K5Znvo.jpg?itok=CvqVGEFU"
+						alt="Song thumbnail"
+					/>
+					<TextField
+						margin="dense"
+						name="title"
+						label="Title"
+						fullWidth
+					/>
+					<TextField
+						margin="dense"
+						name="artist"
+						label="Artist"
+						fullWidth
+					/>
+					<TextField
+						margin="dense"
+						name="thumbnail"
+						label="Thumbnail"
+						fullWidth
+					/>
+				</DialogContent>
+
+				<DialogActions>
+					<Button onClick={handleCloseDialog} color="secondary">
+						Cancel
+					</Button>
+					<Button color="primary">
+						Add Song
+					</Button>
+				</DialogActions>
+			</Dialog>
+
+			<TextField
+				className={classes.urlInput}
+				placeholder="Add Youtube or Soundcloud Url"
+				fullWidth
+				margin="normal"
+				type="url"
+				InputProps={{
+					startAdornment: (
+						<InputAdornment position="start">
+							<Link />
+						</InputAdornment>
+					)
+				}}
+			/>
+
+			<Button
+				className={classes.addSongButton}
+				onClick={() => setDialog(true)}
+				variant="contained"
+				color="primary"
+				endIcon={<AddBoxOutlined />}
+			>
+				Add
+			</Button>
 		</div>
 	)
 }
