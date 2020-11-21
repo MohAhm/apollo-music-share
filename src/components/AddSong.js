@@ -1,3 +1,4 @@
+import { useMutation } from '@apollo/client'
 import {
 	Button,
 	Dialog,
@@ -9,7 +10,9 @@ import {
 	TextField
 } from '@material-ui/core'
 import { AddBoxOutlined, Link } from '@material-ui/icons'
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
+import ReactPlayer from 'react-player'
+import { ADD_SONG } from '../graphql/mutations'
 
 
 const useStyles = makeStyles(theme => ({
@@ -31,14 +34,109 @@ const useStyles = makeStyles(theme => ({
 	}
 }))
 
+const DEFAULT_SONG = {
+	duration: 0,
+	title: '',
+	artist: '',
+	thumbnail: ''
+}
+
 
 function AddSong() {
 	const classes = useStyles()
+	const [addSong, { error }] = useMutation(ADD_SONG)
+	const [url, setUrl] = useState('')
+	const [playable, setPlayable] = useState(false);
 	const [dialog, setDialog] = useState(false)
+	const [song, setSong] = useState(DEFAULT_SONG)
+
+	useEffect(() => {
+		const isPlayable = ReactPlayer.canPlay(url)
+		setPlayable(isPlayable)
+	}, [url]);
+
+	function handleChangeSong(event) {
+		const { name, value } = event.target
+
+		setSong(prevSong => ({
+			...prevSong,
+			[name]: value
+		}))
+	}
 
 	function handleCloseDialog() {
 		setDialog(false)
 	}
+
+	async function handleEditSong({ player }) {
+		const nestedPlayer = player.player.player
+		let songData;
+
+		if (nestedPlayer.getVideoData) {
+			songData = getYoutubeInfo(nestedPlayer)
+		}
+		else if (nestedPlayer.getCurrentSound) {
+			songData = await getSoundcloudInfo(nestedPlayer)
+		}
+
+		setSong({ ...songData, url })
+	}
+
+	async function handleAddSong() {
+		try {
+			const { title, artist, thumbnail, duration, url } = song
+
+			await addSong({
+				variables: {
+					title: title.length > 0 ? title : null,
+					artist: artist.length > 0 ? artist : null,
+					thumbnail: thumbnail.length > 0 ? thumbnail : null,
+					duration: duration > 0 ? duration : null,
+					url: url.length > 0 ? url : null,
+				}
+			})
+
+			handleCloseDialog()
+			setSong(DEFAULT_SONG)
+			setUrl('')
+		} catch (error) {
+			console.log("Error adding song", error)
+		}
+	}
+
+	function getYoutubeInfo(player) {
+		const duration = player.getDuration()
+		const { title, video_id, author } = player.getVideoData()
+		const thumbnail = `https://img.youtube.com/vi/${video_id}/0.jpg`
+
+		return {
+			duration,
+			title,
+			artist: author,
+			thumbnail
+		}
+	}
+
+	function getSoundcloudInfo(player) {
+		return new Promise(resolve => {
+			player.getCurrentSound(songData => {
+				if (songData) {
+					resolve({
+						duration: Number(songData.duration / 1000),
+						title: songData.title,
+						artist: songData.user.username,
+						thumbnail: songData.artwork_url.replace('-large', '-t500x500')
+					})
+				}
+			})
+		})
+	}
+
+	function handleError(field) {
+		return error?.graphQLErrors[0]?.extensions?.path.includes(field)
+	}
+
+	const { thumbnail, title, artist } = song
 
 	return (
 		<div className={classes.container}>
@@ -51,26 +149,38 @@ function AddSong() {
 				<DialogContent>
 					<img
 						className={classes.thumbnail}
-						src="https://ems-media-prod.s3.amazonaws.com/styles/clio_aotw_ems_image_details_retina/s3/entry_attachments/image/50/1398/35822/70126/OQeOfxOTGwDHa1wxiw1bB1zXRhzCbcrGO1Lm9K5Znvo.jpg/OQeOfxOTGwDHa1wxiw1bB1zXRhzCbcrGO1Lm9K5Znvo.jpg?itok=CvqVGEFU"
+						src={thumbnail}
 						alt="Song thumbnail"
 					/>
 					<TextField
+						value={title}
+						onChange={handleChangeSong}
 						margin="dense"
 						name="title"
 						label="Title"
 						fullWidth
+						error={handleError('title')}
+						helperText={handleError('title') && 'Fill out field'}
 					/>
 					<TextField
+						value={artist}
+						onChange={handleChangeSong}
 						margin="dense"
 						name="artist"
 						label="Artist"
 						fullWidth
+						error={handleError('artist')}
+						helperText={handleError('artist') && 'Fill out field'}
 					/>
 					<TextField
+						value={thumbnail}
+						onChange={handleChangeSong}
 						margin="dense"
 						name="thumbnail"
 						label="Thumbnail"
 						fullWidth
+						error={handleError('thumbnail')}
+						helperText={handleError('thumbnail') && 'Fill out field'}
 					/>
 				</DialogContent>
 
@@ -78,7 +188,7 @@ function AddSong() {
 					<Button onClick={handleCloseDialog} color="secondary">
 						Cancel
 					</Button>
-					<Button color="primary">
+					<Button onClick={handleAddSong} variant="outlined" color="primary">
 						Add Song
 					</Button>
 				</DialogActions>
@@ -86,6 +196,8 @@ function AddSong() {
 
 			<TextField
 				className={classes.urlInput}
+				onChange={e => setUrl(e.target.value)}
+				value={url}
 				placeholder="Add Youtube or Soundcloud Url"
 				fullWidth
 				margin="normal"
@@ -100,6 +212,7 @@ function AddSong() {
 			/>
 
 			<Button
+				disabled={!playable}
 				className={classes.addSongButton}
 				onClick={() => setDialog(true)}
 				variant="contained"
@@ -108,6 +221,8 @@ function AddSong() {
 			>
 				Add
 			</Button>
+
+			<ReactPlayer url={url} hidden onReady={handleEditSong} />
 		</div>
 	)
 }

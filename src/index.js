@@ -3,12 +3,16 @@ import React from 'react'
 import ReactDOM from 'react-dom'
 import App from './App'
 import theme from './theme'
+import { ApolloProvider } from '@apollo/client'
+import client from './graphql/client'
 
 ReactDOM.render(
-	<MuiThemeProvider theme={theme}>
-		<CssBaseline />
-		<App />
-	</MuiThemeProvider>,
+	<ApolloProvider client={client}>
+		<MuiThemeProvider theme={theme}>
+			<CssBaseline />
+			<App />
+		</MuiThemeProvider>
+	</ApolloProvider>,
 	document.getElementById('root')
 );
 
