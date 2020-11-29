@@ -8,12 +8,6 @@ import Song from './Song'
 function SongList() {
 	const { data, loading, error } = useSubscription(GET_SONGS)
 
-	// const song = {
-	// 	title: "LUNE",
-	// 	artist: "MÖÖN",
-	// 	thumbnail: "https://img.youtube.com/vi/--ZtUFsIgMk/0.jpg"
-	// }
-
 	if (loading) {
 		return (
 			<div

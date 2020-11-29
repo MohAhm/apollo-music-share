@@ -1,6 +1,9 @@
+import { useMutation } from '@apollo/client'
 import { Card, CardActions, CardContent, CardMedia, IconButton, makeStyles, Typography } from '@material-ui/core'
-import { PlayArrow, Save } from '@material-ui/icons'
-import React from 'react'
+import { Pause, PlayArrow, Save } from '@material-ui/icons'
+import React, { useContext, useState, useEffect } from 'react'
+import { SongContext } from '../App'
+import { ADD_OR_REMOVE_FROM_QUEUE } from '../graphql/mutations'
 
 const useStyles = makeStyles(theme => ({
 	container: {
@@ -24,8 +27,32 @@ const useStyles = makeStyles(theme => ({
 
 
 function Song({ song }) {
+	const { id } = song
 	const classes = useStyles()
+	const [addOrRemoveFromQueue] = useMutation(ADD_OR_REMOVE_FROM_QUEUE, {
+		onCompleted: data => {
+			localStorage.setItem('queue', JSON.stringify(data.addOrRemoveFromQueue))
+		}
+	})
+	const { state, dispatch } = useContext(SongContext)
+	const [currentSongPlaying, setCurrentSongPlaying] = useState(false)
 	const { title, artist, thumbnail } = song
+
+	useEffect(() => {
+		const isSongPlaying = state.isPlaying && id === state.song.id
+		setCurrentSongPlaying(isSongPlaying)
+	}, [id, state.song.id, state.isPlaying])
+
+	function handleTogglePlay() {
+		dispatch({ type: 'SET_SONG', payload: { song }})
+		dispatch(state.isPlaying ? { type: 'PAUSE_SONG' } : { type: 'PLAY_SONG' })
+	}
+
+	function handleAddOrRemoveFromQueue() {
+		addOrRemoveFromQueue({
+			variables: { input: { ...song, __typename: 'Song' } }
+		})
+	}
 
 	return (
 		<Card className={classes.container}>
@@ -42,10 +69,10 @@ function Song({ song }) {
 						</Typography>
 					</CardContent>
 					<CardActions>
-						<IconButton size="small" color="primary">
-							<PlayArrow />
+						<IconButton onClick={handleTogglePlay} size="small" color="primary">
+							{currentSongPlaying ? <Pause /> : <PlayArrow />}
 						</IconButton>
-						<IconButton size="small" color="secondary">
+						<IconButton onClick={handleAddOrRemoveFromQueue} size="small" color="secondary">
 							<Save />
 						</IconButton>
 					</CardActions>
