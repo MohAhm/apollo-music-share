@@ -4,7 +4,7 @@ import { GET_QUEUED_SONGS } from './queries'
 
 const client = new ApolloClient({
 	link: new WebSocketLink({
-		uri: 'ws://graphql-apollo.hasura.app/v1/graphql',
+		uri: 'wss://graphql-apollo.hasura.app/v1/graphql',
 		options: {
 			reconnect: true
 		}
